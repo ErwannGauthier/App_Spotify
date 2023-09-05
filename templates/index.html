@@ -1,0 +1,11 @@
+{% extends 'base.html' %}
+{% block active_home %}text-white{% endblock %}
+{% block content %}
+    <h2>{% block title %} Welcome {{ context['username'] }}{% endblock %}</h2>
+    <p>
+        {% for playlist in context['playlists'] %}
+            <a href="{{ url_for('playlist_data', playlist_id=playlist.id) }}">{{ playlist.name }}</a>
+            <br>
+        {% endfor %}
+    </p>
+{% endblock %}

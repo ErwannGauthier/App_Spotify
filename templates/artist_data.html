@@ -1,0 +1,602 @@
+{% extends 'base.html' %}
+
+{% set artist = context['artist'] %}
+{% set tracks = context['tracks'] %}
+{% set artist_albums = context['artist_albums'] %}
+{% set other_albums = context['other_albums'] %}
+
+{% block title %} Artist - {{ artist.name }} {% endblock %}
+
+{% block content %}
+    <!--<div class="loading">
+        <div>
+            <h2>Nous récupérons les données de l'artiste, cela peut prendre quelques minutes...</h2>
+        </div>
+
+        <div>
+            <span></span>
+            <span></span>
+            <span></span>
+            <span></span>
+            <span></span>
+            <span></span>
+            <span></span>
+        </div>
+    </div>-->
+
+    <section>
+        <div class="d-flex">
+            <div class="w-50 d-flex justify-content-center align-items-center">
+                {% if artist.has_images() %}
+                    <img class="border border-white" src="{{ artist.get_image_url_large() }}" alt="{{ artist.name }}"
+                         width="320" height="320">
+                {% else %}
+                    <img src="{{ url_for('static', filename="images/artist_image.png") }}"
+                         alt="The artist has no image.">
+                {% endif %}
+            </div>
+            <div class="w-50">
+                <h2 class="pb-1"><strong>{{ artist.name }}</strong><br><span
+                        class="spotify_grey_color">{{ artist.type|capitalize }}</span></h2>
+                <p><strong>Spotify :</strong> <a class="spotify_grey_color"
+                                                 href="{{ artist.get_external_urls_spotify() }}"
+                                                 target="_blank"><span
+                        class="spotify_grey_color">{{ artist.get_external_urls_spotify() }}</span></a>
+                </p>
+                <p><strong>Followers :</strong> <span
+                        class="spotify_grey_color">{{ artist.get_followers_total_str() }}</span></p>
+                <p><strong>Genres :</strong>
+                    <span class="spotify_grey_color">
+                {% for genre in artist.genres %}
+                    {{ genre|capitalize }}{% if loop.index < artist.genres|length %},{% endif %}
+                {% endfor %}
+                </span>
+                </p>
+                <p><strong>Popularity :</strong> <span class="spotify_grey_color">{{ artist.popularity }} %</span></p>
+                <!--
+            <p><strong>Albums :</strong> <span class="spotify_grey_color">{{ artist_albums|length }}</span>
+            </p>
+            <p><strong>Singles / Featuring :</strong> <span
+                    class="spotify_grey_color">{{ other_albums|length }}</span></p>-->
+                <p><strong>Track list length :</strong> <span
+                        class="spotify_grey_color">{{ tracks|length }} (<span id="length_wo_copy"></span>)</span></p>
+            </div>
+        </div>
+    </section>
+
+    <section>
+        <div class="pb-5">
+            <div class="py-3">
+                <div id="totalPlaceAlert"></div>
+                <div class="d-flex justify-content align-items-center">
+                    <button type="button" class="btn btn-success mx-2" data-bs-toggle="modal"
+                            data-bs-target="#firstModal">
+                        Add to playlist
+                    </button>
+                    <button type="button" class="btn btn-primary mx-2" onclick=addAllTracksToSelectedTracks()>Select
+                        all
+                    </button>
+                    <button type="button" class="btn btn-secondary mx-2" onclick=removeAllTracksFromSelectedTracks()>
+                        Remove all
+                    </button>
+                </div>
+                <div class="d-flex justify-content-end align-items-center">
+                    <label for="showIsCopy">Show copy</label>
+                    <input type="checkbox" id="showIsCopy" name="showIsCopy" checked="checked" autocomplete="off">
+                </div>
+                <div class="d-flex justify-content-end align-items-center">
+                    <input type="text" id="searchBar" name="searchBar" placeholder="Rechercher..." class="form_css">
+                    <select id="selectSort" name="sorts" class="form_css">
+                        <option disabled>Sort by :</option>
+                        <option value="init">#</option>
+                        <option value="name">Title</option>
+                        <option value="artist">Artist</option>
+                        <option value="album_name">Album</option>
+                        <option value="release_date">Release Date</option>
+                        <option value="duration_ms">Duration</option>
+                        <option value="ignore" style="display: none" selected="selected">Sort by :</option>
+                    </select>
+
+                    <select id="selectFilter" name="filters" class="form_css">
+                        <option disabled>Filter by :</option>
+                        <option value="album">Tracks from albums</option>
+                        <option value="non_album">Tracks not from albums</option>
+                        <option value="featuring">Featuring</option>
+                        <option value="ignore" style="display: none" selected="selected">Filters</option>
+                    </select>
+                </div>
+            </div>
+            <div id="div_track_list_tab">
+                <div class="div_track_header d-flex align-items-center px-1 py-3 rounded-top">
+                    <div class="text-center" style="width: 4%;">
+                        <strong>#</strong>
+                    </div>
+                    <div style="width: 45%;">
+                        <strong>Title</strong>
+                    </div>
+                    <div style="width: 45%;">
+                        <strong>Album</strong>
+                    </div>
+                    <div style="width: 6%;">
+                        <strong>Durée</strong>
+                    </div>
+                </div>
+                <div id="div_track_list">
+                    {% for track in tracks %}
+                        <div class="div_track d-flex align-items-center p-1" id="{{ track.id }}"
+                             onclick=updateSelectedTracks("{{ track.id }}")>
+                            <div class="text-center" style="width: 4%;">{{ loop.index }}</div>
+                            <div class="div_track_name_and_artists  d-flex" style="width: 45%; max-width: 45%">
+                                <div class="div-img">
+                                    <img class="rounded" src="
+                                        {% if track.album.get_image_small() %}
+                                            {{ track.album.get_image_url_small() }}
+                                        {% elif track.album.get_image_medium() %}
+                                            {{ track.album.get_image_url_medium() }}
+                                        {% elif track.album.get_image_large() %}
+                                            {{ track.album.get_image_url_large() }}
+                                        {% else %}
+                                            {{ url_for('static', filename="images/album_image.png") }}
+                                        {% endif %}"
+                                         alt="{{ track.album.name }}"
+                                         height="48"
+                                         width="48"
+                                         loading="lazy">
+                                    <!--<img class="rounded superpose" src="{{ url_for('static', filename="images/album_image.png") }}"
+                                     alt="{{ track.album.name }}"
+                                     height="48"
+                                     width="48"
+                                     loading="lazy">-->
+                                </div>
+                                <div class="ms-2">
+                                    <div class="div_track_name">
+                                        <strong>{{ track.name }}</strong></div>
+                                    <div class="div_track_artist spotify_grey_color">
+                                        {% for artist in track.artists %}
+                                            <a class="div_track_link"
+                                               href="{{ url_for('artist_data', artist_id=artist.id) }}">
+                                                {{ artist.name }}</a>{% if loop.index < track.artists|length %},
+                                        {% endif %}
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="spotify_grey_color" style="width: 45%;">
+                                {% if track.album.is_single() %}
+                                    Single{% else %}<a href="{{ url_for('album_data', album_id=track.album.id) }}"
+                                                       class="div_track_link">{{ track.album.name }}</a>{% endif %}
+                            </div>
+                            <div class="spotify_grey_color"
+                                 style="width: 6%;">{{ track.get_duration_string() }}</div>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Modals -->
+    <section>
+        <div class="modal fade" id="firstModal" tabindex="-1" aria-labelledby="firstModal-title" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h2 class="modal-title fs-5 text-dark" id="firstModal-title">What do you want to do ?</h2>
+                        <button id="firstModalCloseBtn" type="button" class="btn-close" data-bs-dismiss="modal"
+                                aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <button type="button" class="btn btn-success" data-bs-toggle="modal"
+                                data-bs-target="#newModal">New playlist
+                        </button>
+                        <button type="button" class="btn btn-success" data-bs-toggle="modal"
+                                data-bs-target="#selectModal" onclick="get_playlists()">Select playlist
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal fade" id="newModal" tabindex="-1" aria-labelledby="newModal-title" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h2 class="modal-title fs-5 text-dark" id="newModal-title">New playlist</h2>
+                        <button id="newModalCloseBtn" type="button" class="btn-close" data-bs-dismiss="modal"
+                                aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="alert alert-primary" role="alert">
+                            A public playlist can't be collaborative and vice versa.
+                        </div>
+                        <div id="newFormPlaceAlert"></div>
+                        <div id="newForm">
+                            <div class="mb-2">
+                                <label for="newPName" class="form-label text-dark">Name <strong
+                                        class="text-danger">*</strong></label>
+                                <input type="text" id="newPName" name="newPName" class="form-control"
+                                       aria-describedby="newPNameHelp" required="required" autocomplete="off">
+                                <div id="newPNameHelp" class="form-text">The name of the playlist. Required.</div>
+                            </div>
+                            <div class="mb-2">
+                                <label for="newPDesc" class="form-label text-dark">Description</label>
+                                <textarea id="newPDesc" name="newPDesc" class="form-control"
+                                          aria-describedby="newPDescHelp" autocomplete="off"></textarea>
+                                <div id="newPDescHelp" class="form-text">The description of the playlist.</div>
+                            </div>
+                            <div class="mb-2">
+                                <label for="newPPublic" class="form-check-label text-dark">Public</label>
+                                <br>
+                                <input type="checkbox" id="newPPublic" name="newPPublic" class="form-check-input"
+                                       aria-describedby="newPPublicHelp" onclick="disable_collab()" autocomplete="off">
+                                <div id="newPPublicHelp" class="form-text">If checked the playlist will be public.</div>
+                            </div>
+                            <div class="mb-2">
+                                <label for="newPCollab" class="form-check-label text-dark">Collaborative</label>
+                                <br>
+                                <input type="checkbox" id="newPCollab" name="newPCollab" class="form-check-input"
+                                       aria-describedby="newPCollabHelp" onclick="disable_public()" autocomplete="off">
+                                <div id="newPCollabHelp" class="form-text">If checked the playlist will be
+                                    collaborative.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" form="newForm" class="btn btn-success" onclick="create_playlist()">
+                            Validate
+                        </button>
+                        <button type="button" class="btn btn-secondary" data-bs-toggle="modal"
+                                data-bs-target="#firstModal">Go back
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal fade" id="selectModal" tabindex="-1" aria-labelledby="selectModal-title" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h2 class="modal-title fs-5 text-dark" id="selectModal-title">Select playlist</h2>
+                        <button id="selectModalCloseBtn" type="button" class="btn-close" data-bs-dismiss="modal"
+                                aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div id="selectFormPlaceAlert"></div>
+                        <div class="selectForm_header bg-light d-flex align-items-center px-2 pt-3 rounded-top text-dark">
+                            <div style="width: 15%;" class="text-center">
+                                <strong>Select</strong>
+                            </div>
+                            <div style="width: 60%;" class="px-2">
+                                <strong>Title</strong>
+                            </div>
+                            <div style="width: 25%;" class="text-center">
+                                <strong>Double</strong>
+                            </div>
+                        </div>
+                        <div id="selectForm">
+
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" form="selectForm" class="btn btn-success" onclick="add_to_selected()">
+                            Validate
+                        </button>
+                        <button type="button" class="btn btn-secondary" data-bs-toggle="modal"
+                                data-bs-target="#firstModal">Go back
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+{% endblock %}
+
+{% block script %}
+    <script>
+        const artist = JSON.parse({{ artist.toJSON()|tojson }});
+        const list_of_tracks = [{% for track in tracks  %} JSON.parse({{ track.toJSON()|tojson }}),{% endfor %}];
+        const list_of_artist_albums = [{% for a_album in artist_albums %}JSON
+            .parse({{ a_album.toJSON()|tojson }}),{% endfor %}];
+        const list_of_other_albums = [{% for o_album in other_albums %}JSON
+            .parse({{ o_album.toJSON()|tojson }}),{% endfor %}];
+
+        /**let Tempo_selectedTracks = [];
+         for (let i = 0; i < list_of_tracks.length; i++) {
+            Tempo_selectedTracks.push(list_of_tracks[i]["id"]);
+        }**/
+    </script>
+
+    <script>
+        const checkbox_public = document.getElementById("newPPublic");
+        const checkbox_collab = document.getElementById("newPCollab");
+
+        function disable_collab() {
+            if (checkbox_public.checked) {
+                checkbox_collab.checked = false;
+            }
+        }
+
+        function disable_public() {
+            if (checkbox_collab.checked) {
+                checkbox_public.checked = false;
+            }
+        }
+    </script>
+
+    <script>
+        let selectedTracks = [];
+
+        function isTrackSelected(idTrack) {
+            return selectedTracks.indexOf(idTrack) !== -1;
+        }
+
+        function addTrackToSelectedTracks(idTrack) {
+            selectedTracks.push(idTrack);
+            let div = document.getElementById(idTrack);
+            div.classList.remove("div_track");
+            div.classList.add("div_track_selected");
+        }
+
+        function removeTrackFromSelectedTracks(idTrack) {
+            selectedTracks.splice(selectedTracks.indexOf(idTrack), 1);
+            let div = document.getElementById(idTrack);
+            div.classList.remove("div_track_selected");
+            div.classList.add("div_track");
+        }
+
+        function updateSelectedTracks(idTrack) {
+            if (isTrackSelected((idTrack))) {
+                removeTrackFromSelectedTracks(idTrack);
+            } else {
+                addTrackToSelectedTracks(idTrack);
+            }
+        }
+
+        function addAllTracksToSelectedTracks() {
+            let div_track_list = document.getElementById("div_track_list");
+            for (let i = 0; i < div_track_list.children.length; i++) {
+                let currentDiv = div_track_list.children[i];
+                if (currentDiv.style.display === "" && !isTrackSelected(currentDiv.id)) {
+                    addTrackToSelectedTracks(currentDiv.id);
+                }
+            }
+        }
+
+        function removeAllTracksFromSelectedTracks() {
+            let div_track_list = document.getElementById("div_track_list");
+            for (let i = 0; i < div_track_list.children.length; i++) {
+                let currentDiv = div_track_list.children[i];
+                if (currentDiv.style.display === "" && isTrackSelected(currentDiv.id)) {
+                    removeTrackFromSelectedTracks(currentDiv.id);
+                }
+            }
+        }
+
+        function placeAlert(container, message, type, spin = false) {
+            let alertDiv = document.createElement("div");
+            alertDiv.classList.add("alert", "alert-" + type, "alert-dismissible");
+            alertDiv.setAttribute("role", "alert");
+
+            let divMessage = document.createElement("div");
+            divMessage.innerText = message;
+
+            let buttonClose = document.createElement("button");
+            buttonClose.classList.add("btn-close");
+            buttonClose.setAttribute("type", "button");
+            buttonClose.setAttribute("data-bs-dismiss", "alert");
+            buttonClose.setAttribute("aria-label", "Close");
+
+            if (spin) {
+                alertDiv.classList.add("d-flex", "justify-content", "align-items-center");
+
+                let spinnerSpan = document.createElement("span");
+                spinnerSpan.classList.add("visually-hidden");
+                spinnerSpan.innerText = "Loading...";
+
+                let spinnerDiv = document.createElement("div");
+                spinnerDiv.classList.add("spinner-border", "text-" + type, "me-3");
+                spinnerDiv.setAttribute("role", "status");
+
+                spinnerDiv.appendChild(spinnerSpan);
+
+                alertDiv.appendChild(spinnerDiv);
+            }
+
+            alertDiv.appendChild(divMessage);
+            alertDiv.appendChild(buttonClose);
+
+            container.appendChild(alertDiv);
+        }
+
+        function get_playlists() {
+            const selectForm = document.getElementById("selectForm");
+            selectForm.replaceChildren();
+            placeAlert(document.getElementById("selectFormPlaceAlert"), "Getting playlists...", "secondary", true)
+
+            fetch("{{ url_for('get_playlists') }}", {
+                method: "POST",
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify()
+            }).then(response => response.json()
+            ).then(jsonResponse => {
+                document.getElementById("selectFormPlaceAlert").replaceChildren();
+                for (let i = 0; i < jsonResponse["playlists"].length; i++) {
+                    let current_item = JSON.parse(jsonResponse["playlists"][i]);
+
+                    let row = document.createElement("div");
+                    row.classList.add("selectForm_row", "bg-light", "d-flex", "align-items-center", "text-dark", "px-2");
+                    row.setAttribute("id", "row_" + current_item["id"]);
+
+                    let div_checkbox = document.createElement("div");
+                    div_checkbox.classList.add("text-center");
+                    div_checkbox.setAttribute("style", "width: 15%;");
+
+                    let checkbox = document.createElement("input");
+                    checkbox.classList.add("form-check-input");
+                    checkbox.setAttribute("type", "checkbox");
+                    checkbox.setAttribute("id", "slctP_" + current_item["id"]);
+                    checkbox.setAttribute("name", "slctP_" + current_item["id"]);
+                    checkbox.setAttribute("autocomplete", "off");
+
+                    let div_name = document.createElement("div");
+                    div_name.classList.add("px-2");
+                    div_name.setAttribute("style", "width: 60%;");
+
+                    let div_switch = document.createElement("div");
+                    div_switch.classList.add("d-flex", "justify-content-between", "px-2");
+                    div_switch.setAttribute("style", "width: 25%;");
+
+                    let div_form_switch = document.createElement("div");
+                    div_form_switch.classList.add("form-check", "form-switch", "ms-2");
+
+                    let input_switch = document.createElement("input");
+                    input_switch.classList.add("form-check-input");
+                    input_switch.setAttribute("type", "checkbox");
+                    input_switch.setAttribute("role", "switch");
+                    input_switch.setAttribute("id", "slctPDbl_" + current_item["id"]);
+                    input_switch.setAttribute("name", "slctPDbl_" + current_item["id"]);
+                    input_switch.setAttribute("autocomplete", "off");
+
+                    div_checkbox.appendChild(checkbox);
+                    div_name.appendChild(document.createTextNode(current_item["name"]));
+                    div_switch.appendChild(document.createTextNode("No"));
+                    div_form_switch.appendChild(input_switch);
+                    div_switch.appendChild(div_form_switch);
+                    div_switch.appendChild(document.createTextNode("Yes"));
+
+                    row.appendChild(div_checkbox);
+                    row.appendChild(div_name);
+                    row.appendChild(div_switch);
+
+                    selectForm.appendChild(row);
+                }
+                selectForm.lastElementChild.classList.add("rounded-bottom", "pb-3");
+            }).catch(function (error) {
+                document.getElementById("selectFormPlaceAlert").replaceChildren();
+                placeAlert(document.getElementById("selectFormPlaceAlert"), "A server error has occurred.", "danger")
+            });
+        }
+
+        function create_playlist() {
+            let m_name = document.getElementById("newPName").value;
+            let m_description = document.getElementById("newPDesc").value;
+            let m_public = document.getElementById("newPPublic").checked;
+            let m_collaborative = document.getElementById("newPCollab").checked;
+
+            if (m_name === "" || selectedTracks.length <= 0) {
+                let divPlaceAlert = document.getElementById("newFormPlaceAlert");
+                divPlaceAlert.replaceChildren();
+                placeAlert(divPlaceAlert, "Name input can't be empty.", "danger");
+
+                let newModal = document.getElementById("newModal");
+                newModal.scrollTo({top: 0, behavior: 'smooth'});
+                return false
+            } else if (m_public && m_collaborative) {
+                let divPlaceAlert = document.getElementById("newFormPlaceAlert");
+                divPlaceAlert.replaceChildren();
+                placeAlert(divPlaceAlert, "A public playlist can't be collaborative and vice versa.", "danger");
+
+                let newModal = document.getElementById("newModal");
+                newModal.scrollTo({top: 0, behavior: 'smooth'});
+                return false
+            }
+
+            document.getElementById("newModalCloseBtn").click();
+            placeAlert(document.getElementById("totalPlaceAlert"), "Creating the playlist...", "secondary", true);
+            window.scrollTo({top: 0, behavior: 'smooth'});
+
+            fetch("{{ url_for('create_new_playlist') }}", {
+                method: "POST",
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    name: m_name,
+                    description: m_description,
+                    public: m_public,
+                    collaborative: m_collaborative,
+                    ids: selectedTracks
+                })
+            }).then(response => response.json()
+            ).then(jsonResponse => {
+                document.getElementById("newFormPlaceAlert").replaceChildren();
+                document.getElementById("newPName").value = "";
+                document.getElementById("newPDesc").value = "";
+                document.getElementById("newPPublic").checked = false;
+                document.getElementById("newPCollab").checked = false;
+
+                document.getElementById("totalPlaceAlert").replaceChildren();
+                if (jsonResponse["result"] === true) {
+                    placeAlert(document.getElementById("totalPlaceAlert"), "The playlist has been successfully created.", "success");
+                } else {
+                    placeAlert(document.getElementById("totalPlaceAlert"), "An error occurred while creating the playlist. Make sure that all conditions were validated before creating your playlist.", "danger");
+                }
+                window.scrollTo({top: 0, behavior: 'smooth'});
+            }).catch(function (error) {
+                document.getElementById("newModalCloseBtn").click();
+                placeAlert(document.getElementById("totalPlaceAlert"), "A server error has occurred.", "danger");
+            });
+        }
+
+        function add_to_selected() {
+            let m_selection = [];
+            let selectForm = document.getElementById("selectForm");
+            for (let i = 0; i < selectForm.children.length; i++) {
+                let currentObject = selectForm.children[i];
+                let playlistId = currentObject.id.slice(4);
+                let isPlaylistSelected = document.getElementById("slctP_" + playlistId).checked;
+                if (isPlaylistSelected) {
+                    let isDoublonSelected = document.getElementById("slctPDbl_" + playlistId).checked;
+                    m_selection.push([playlistId, isDoublonSelected])
+                }
+            }
+
+            if (m_selection.length <= 0 || selectedTracks.length <= 0) {
+                let divPlaceAlert = document.getElementById("selectFormPlaceAlert");
+                if (divPlaceAlert.children.length <= 0) {
+                    placeAlert(divPlaceAlert, "You have to select at least one playlist.", "danger");
+                }
+                let selectModal = document.getElementById("selectModal");
+                selectModal.scrollTo({top: 0, behavior: 'smooth'});
+                return false
+            }
+
+            document.getElementById("selectModalCloseBtn").click();
+            placeAlert(document.getElementById("totalPlaceAlert"), "Adding tracks to the playlist...", "secondary", true);
+            window.scrollTo({top: 0, behavior: 'smooth'});
+
+            fetch("{{ url_for('add_selected_playlist') }}", {
+                method: "POST",
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    selection: m_selection,
+                    ids: selectedTracks
+                })
+            }).then(response => response.json()
+            ).then(jsonResponse => {
+                let selectForm = document.getElementById("selectForm");
+                for (let i = 0; i < selectForm.children.length; i++) {
+                    let currentObject = selectForm.children[i];
+                    let playlistId = currentObject.id.slice(4);
+                    document.getElementById("slctP_" + playlistId).checked = false;
+                    document.getElementById("slctPDbl_" + playlistId).checked = false;
+                }
+
+                document.getElementById("totalPlaceAlert").replaceChildren();
+                if (jsonResponse["result"] === true) {
+                    placeAlert(document.getElementById("totalPlaceAlert"), "The playlist has been successfully edited.", "success");
+                } else {
+                    placeAlert(document.getElementById("totalPlaceAlert"), "An error occurred while editing the playlist. Make sure that all conditions were validated before editing your playlist.", "danger");
+                }
+                window.scrollTo({top: 0, behavior: 'smooth'});
+            }).catch(function (error) {
+                document.getElementById("selectModalCloseBtn").click();
+                placeAlert(document.getElementById("totalPlaceAlert"), "A server error has occurred.", "danger");
+            });
+        }
+    </script>
+    <!--<script src="{{ url_for('static', filename='js/preloader.js') }}"></script>-->
+
+    <script src="{{ url_for('static', filename='js/sort_functions.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/artist_data.js') }}"></script>
+{% endblock %}

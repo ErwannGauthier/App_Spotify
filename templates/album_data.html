@@ -1,0 +1,136 @@
+{% extends 'base.html' %}
+{% set album = context['album'] %}
+{% block title %} Album - {{ album.name }} {% endblock %}
+{% block content %}
+    <div class="d-flex">
+        <div class="w-50 d-flex justify-content-center align-items-center">
+            {% if album.has_images() %}
+                <img class="border border-white" src="{{ album.get_image_url_large() }}" alt="{{ album.name }}"
+                     width="320" height="320">
+            {% else %}
+                <img src="{{ url_for('static', filename="images/album_image.png") }}" alt="The album has no image.">
+            {% endif %}
+        </div>
+        <div class="w-50">
+            <h2 class="pb-1"><strong>{{ album.name }}</strong><br>
+                <span class="spotify_grey_color">
+                    {% for artist in album.artists %}
+                        <a class="div_track_link"
+                           href="{{ url_for('artist_data', artist_id=artist.id) }}">
+                            <strong>{{ artist.name }}</strong></a>{% if loop.index < album.artists|length %},{% endif %}
+                    {% endfor %}
+                </span>
+            </h2>
+            <p><strong>Spotify :</strong> <a class="spotify_grey_color" href="{{ album.get_external_urls_spotify() }}"
+                                             target="_blank"><span
+                    class="spotify_grey_color">{{ album.get_external_urls_spotify() }}</span></a>
+            </p>
+            <p><strong>Release date :</strong> <span class="spotify_grey_color">{{ album.release_date }}</span></p>
+            {% if album.genres|length > 0 %}
+                <p><strong>Genres :</strong>
+                    <span class="spotify_grey_color">
+                {% for genre in album.genres %}
+                    {{ genre|capitalize }}{% if loop.index < album.genres|length %},{% endif %}
+                {% endfor %}
+                </span>
+                </p>
+            {% endif %}
+            <p><strong>Popularity :</strong> <span class="spotify_grey_color">{{ album.popularity }} %</span></p>
+            <p><strong>Duration :</strong> <span
+                    class="spotify_grey_color">{{ album.get_duration_string() }}</span></p>
+            <p><strong>Total tracks :</strong> <span class="spotify_grey_color">{{ album.total_tracks }}</span></p>
+            <p><strong>Label :</strong> <span class="spotify_grey_color">{{ album.label }}</span></p>
+        </div>
+    </div>
+    <div class="pb-5">
+        <div class="py-3">
+            <div class="d-flex justify-content-end align-items-center">
+                <input type="text" id="searchBar" name="searchBar" placeholder="Rechercher..." class="form_css">
+                <select id="selectSort" name="sorts" class="form_css">
+                    <option disabled>Sort by :</option>
+                    <option value="init">#</option>
+                    <option value="name">Title</option>
+                    <option value="artist">Artist</option>
+                    <option value="duration_ms">Duration</option>
+                    <option value="ignore" style="display: none" selected="selected">Sort by :</option>
+                </select>
+
+                <select id="selectFilter" name="filters" class="form_css">
+                    <option disabled>Filter by :</option>
+                    <option value="featuring">Featuring</option>
+                    <option value="ignore" style="display: none" selected="selected">Filters</option>
+                </select>
+            </div>
+        </div>
+        <div id="div_track_list_tab">
+            <div class="div_track_header d-flex align-items-center px-1 py-3 rounded">
+                <div class="text-center" style="width: 4%;">
+                    <strong>#</strong>
+                </div>
+                <div style="width: 90%;">
+                    <strong>Title</strong>
+                </div>
+                <div style="width: 6%;">
+                    <strong>Durée</strong>
+                </div>
+            </div>
+            <div id="div_track_list">
+                {% for track in album.tracks %}
+                    <div class="div_track d-flex align-items-center p-1" id="{{ track.id }}">
+                        <div class="text-center" style="width: 4%;">{{ loop.index }}</div>
+                        <div class="div_track_name_and_artists  d-flex" style="width: 90%; max-width: 90%">
+                            <div>
+                                <img class="rounded" src="
+                                        {% if track.album.get_image_small() %}
+                                            {{ track.album.get_image_url_small() }}
+                                        {% elif track.album.get_image_medium() %}
+                                            {{ track.album.get_image_url_medium() }}
+                                        {% elif track.album.get_image_large() %}
+                                            {{ track.album.get_image_url_large() }}
+                                        {% else %}
+                                            {{ url_for('static', filename="images/album_image.png") }}
+                                        {% endif %}"
+                                     alt="{{ track.album.name }}"
+                                     height="48"
+                                     width="48"
+                                     loading="lazy">
+                            </div>
+                            <div class="ms-2">
+                                <div class="div_track_name">
+                                    <strong>{{ track.name }}</strong></div>
+                                <div class="div_track_artist spotify_grey_color">
+                                    {% for artist in track.artists %}
+                                        <a class="div_track_link"
+                                           href="{{ url_for('artist_data', artist_id=artist.id) }}">
+                                            {{ artist.name }}</a>{% if loop.index < track.artists|length %},{% endif %}
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="spotify_grey_color"
+                             style="width: 6%;">{{ track.get_duration_string() }}</div>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+        <div class="pt-4">
+            <p class="spotify_grey_color">
+                {% for copyright in album.copyrights %}
+                    {{ copyright['text'] }}<br>
+                {% endfor %}
+            </p>
+        </div>
+    </div>
+{% endblock %}
+
+{% block script %}
+    <script>
+        const album = JSON.parse({{ album.toJSON()|tojson }});
+        const list_of_tracks = album["tracks"];
+        const list_of_artist_albums = [];
+        const list_of_other_albums = [];
+    </script>
+
+    <script src="{{ url_for('static', filename='js/sort_functions.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/album_data.js') }}"></script>
+{% endblock %}

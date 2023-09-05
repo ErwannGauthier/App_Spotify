@@ -1,0 +1,184 @@
+@font-face {
+    font-family: 'GothamMedium';
+    src: url('fonts/Gotham-Spotify-Font/GothamMedium.ttf') format('truetype');
+    font-weight: normal;
+    font-style: normal;
+}
+
+.div-artist, .div_track, .div_track_header {
+    background-color: #181818;
+}
+
+.div-artist:hover, .div_track:hover {
+    background-color: #282828;
+}
+
+.spotify_grey_color, .spotify_grey_color:hover, .spotify_grey_color:link, .spotify_grey_color:visited, .spotify_grey_color:active {
+    color: #A7A7A7;
+    text-decoration: none;
+}
+
+.div_track:hover * {
+    color: white;
+}
+
+.div_track_link {
+    color: #A7A7A7;
+    text-decoration: none;
+}
+
+.div_track_link:hover {
+    color: white;
+    text-decoration: underline;
+}
+
+.div_track_selected, .div_track_selected *, .div_track_selected:hover * {
+    background-color: #5a5a5A;
+    color: white;
+}
+
+.form_css {
+    color: white;
+    background-color: #282828;
+    border: none;
+    border-radius: 5px;
+    width: 200px;
+    height: 40px;
+    padding: 5px 10px;
+    outline: none;
+}
+
+.form_css:focus {
+    outline: #A7A7A7 solid 1px;
+}
+
+#searchBar {
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+}
+
+#selectSort {
+    border-left: #A7A7A7 solid 1px;
+    border-right: #A7A7A7 solid 1px;
+    border-radius: 0;
+}
+
+#selectFilter {
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+}
+
+#selectSort, #selectFilter {
+    -webkit-appearance: none;
+    appearance: none;
+    cursor: pointer;
+}
+
+.sortOptionSelected, .filterOptionSelected {
+    color: #1DB954;
+    font-weight: bold;
+}
+
+.loading {
+    position: fixed;
+    top: 0;
+    left: 0;
+    background-color: #121212;
+    height: 100%;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+}
+
+.disappear {
+    animation: fadeout 1s forwards;
+}
+
+@keyframes fadeout {
+    100% {
+        opacity: 0;
+        visibility: hidden;
+    }
+}
+
+.loading h2 {
+    color: #ccc;
+    margin: 0;
+}
+
+/*
+ * Loading Dots
+ * Can we use pseudo elements here instead :after?
+ */
+.loading span {
+    display: inline-block;
+    vertical-align: middle;
+    width: .6em;
+    height: .6em;
+    margin: .19em;
+    background: #007DB6;
+    border-radius: .6em;
+    animation: loading 1s infinite alternate;
+}
+
+/*
+ * Dots Colors
+ * Smarter targeting vs nth-of-type?
+ */
+.loading span:nth-of-type(2) {
+    background: #008FB2;
+    animation-delay: 0.2s;
+}
+
+.loading span:nth-of-type(3) {
+    background: #009B9E;
+    animation-delay: 0.4s;
+}
+
+.loading span:nth-of-type(4) {
+    background: #00A77D;
+    animation-delay: 0.6s;
+}
+
+.loading span:nth-of-type(5) {
+    background: #00B247;
+    animation-delay: 0.8s;
+}
+
+.loading span:nth-of-type(6) {
+    background: #5AB027;
+    animation-delay: 1.0s;
+}
+
+.loading span:nth-of-type(7) {
+    background: #A0B61E;
+    animation-delay: 1.2s;
+}
+
+/*
+ * Animation keyframes
+ * Use transition opacity instead of keyframes?
+ */
+@keyframes loading {
+    0% {
+        opacity: 0;
+    }
+    100% {
+        opacity: 1;
+    }
+}
+
+
+.div-img {
+    position: relative;
+    display: inline;
+}
+
+.superpose {
+    position: absolute;
+    top: 0;
+    left: 0;
+    opacity: 10%;
+}

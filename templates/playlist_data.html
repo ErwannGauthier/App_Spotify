@@ -1,0 +1,106 @@
+{% extends 'base.html' %}
+
+{% set playlist = context['playlist'] %}
+
+{% block title %} Playlist - {{ playlist.name }} {% endblock %}
+
+{% block content %}
+    <div class="d-flex">
+        <div class="w-50 d-flex justify-content-center align-items-center">
+            {% if playlist.has_images() %}
+                <img class="border border-white" src="{{ playlist.get_image_url_large() }}" alt="{{ playlist.name }}"
+                     width="320" height="320">
+            {% else %}
+                <img src="{{ url_for('static', filename="images/album_image.png") }}" alt="The playlist has no image.">
+            {% endif %}
+        </div>
+        <div class="w-50">
+            <h2 class="pb-1"><strong>{{ playlist.name }}</strong><br>
+                <span class="spotify_grey_color">
+                        <a class="div_track_link" href="">
+                            <strong>{{ playlist.owner.display_name }}</strong>
+                        </a>
+                </span>
+            </h2>
+            <p><strong>Spotify :</strong> <a class="spotify_grey_color" href="{{ playlist.get_external_urls_spotify() }}"
+                                             target="_blank"><span
+                    class="spotify_grey_color">{{ playlist.get_external_urls_spotify() }}</span></a>
+            </p>
+            <p><strong>Description :</strong> <span class="spotify_grey_color">{{ playlist.description }}</span></p>
+            <p><strong>Total tracks :</strong> <span class="spotify_grey_color">{{ playlist.total_tracks }}</span></p>
+        </div>
+    </div>
+    <div class="pb-5">
+        <div class="py-3">
+            <div class="d-flex justify-content-end align-items-center">
+                <input type="text" id="searchBar" name="searchBar" placeholder="Rechercher..." class="form_css">
+                <select id="selectSort" name="sorts" class="form_css">
+                    <option disabled>Sort by :</option>
+                    <option value="init">#</option>
+                    <option value="name">Title</option>
+                    <option value="artist">Artist</option>
+                    <option value="duration_ms">Duration</option>
+                    <option value="ignore" style="display: none" selected="selected">Sort by :</option>
+                </select>
+
+                <select id="selectFilter" name="filters" class="form_css">
+                    <option disabled>Filter by :</option>
+                    <option value="featuring">Featuring</option>
+                    <option value="ignore" style="display: none" selected="selected">Filters</option>
+                </select>
+            </div>
+        </div>
+        <div id="div_track_list_tab">
+            <div class="div_track_header d-flex align-items-center px-1 py-3 rounded">
+                <div class="text-center" style="width: 4%;">
+                    <strong>#</strong>
+                </div>
+                <div style="width: 90%;">
+                    <strong>Title</strong>
+                </div>
+                <div style="width: 6%;">
+                    <strong>Durée</strong>
+                </div>
+            </div>
+            <div id="div_track_list">
+                {% for playlistTrack in playlist.tracks %}
+                    {% set track = playlistTrack.track %}
+                    <div class="div_track d-flex align-items-center p-1" id="{{ track.id }}">
+                        <div class="text-center" style="width: 4%;">{{ loop.index }}</div>
+                        <div class="div_track_name_and_artists  d-flex" style="width: 90%; max-width: 90%">
+                            <div>
+                                <img class="rounded" src="
+                                        {% if track.album.get_image_small() %}
+                                            {{ track.album.get_image_url_small() }}
+                                        {% elif track.album.get_image_medium() %}
+                                            {{ track.album.get_image_url_medium() }}
+                                        {% elif track.album.get_image_large() %}
+                                            {{ track.album.get_image_url_large() }}
+                                        {% else %}
+                                            {{ url_for('static', filename="images/album_image.png") }}
+                                        {% endif %}"
+                                     alt="{{ track.album.name }}"
+                                     height="48"
+                                     width="48"
+                                     loading="lazy">
+                            </div>
+                            <div class="ms-2">
+                                <div class="div_track_name">
+                                    <strong>{{ track.name }}</strong></div>
+                                <div class="div_track_artist spotify_grey_color">
+                                    {% for artist in track.artists %}
+                                        <a class="div_track_link"
+                                           href="{{ url_for('artist_data', artist_id=artist.id) }}">
+                                            {{ artist.name }}</a>{% if loop.index < track.artists|length %},{% endif %}
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="spotify_grey_color"
+                             style="width: 6%;">{{ track.get_duration_string() }}</div>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+{% endblock %}
